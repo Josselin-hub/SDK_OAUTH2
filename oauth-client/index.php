@@ -27,7 +27,7 @@ function getUser($params)
 }
 function getFbUser($params)
 {
-    $result = file_get_contents("https://graph.facebook.com/oauth/authenticate?"
+    $result = file_get_contents("https://graph.facebook.com/oauth/access_token?"
         . "redirect_uri=https://localhost/fb-success"
         . "&client_id=" . FBCLIENT_ID
         . "&client_secret=" . FBCLIENT_SECRET
