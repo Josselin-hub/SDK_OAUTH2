@@ -5,7 +5,8 @@ const FBCLIENT_ID = "313096147158775";
 const FBCLIENT_SECRET = "c4ac86c990ffd48b3322d3734ec4ed1a";
 const TWCLIENT_ID = "ZOWVaVipWyfInp9Fkyeq6o0Bl";
 const TWCLIENT_SECRET = "rgMamIF4S0xSJ0aMzERuca0H8cS3deDOd4KWNuoNv0dWX4WluP";
-
+const DCCLIENT_ID = "866779713682931752";
+const DCCLIENT_SECRET = "m5qHOj6WeREEGSaBH-Xk-fubZ-M_dYJA";
 
 function getUser($params)
 {
@@ -64,6 +65,26 @@ function getTwUser($params)
     $user = json_decode($result, true);
     var_dump($user);
 }
+function getDcUser($params)
+{
+    $result = file_get_contents("https://discord.com/api/oauth2/token?"
+        . "redirect_uri=https://localhost/dc-success"
+        . "&client_id=" . DCCLIENT_ID
+        . "&client_secret=" . DCCLIENT_SECRET
+        . "&grant_type=authorization_code"
+        . "&" . http_build_query($params));
+    $token = json_decode($result, true)["access_token"];
+    // GET USER by TOKEN
+    $context = stream_context_create([
+        'http' => [
+            'method' => "GET",
+            'header' => "Authorization: Bearer " . $token
+        ]
+    ]);
+    $result = file_get_contents("https://discord.com/api", false, $context);
+    $user = json_decode($result, true);
+    var_dump($user);
+}
 /**
  * AUTH_CODE WORKFLOW
  *  => Get CODE
@@ -96,6 +117,11 @@ switch ($route) {
             . "&client_id=" . TWCLIENT_ID
             . "&redirect_uri=https://localhost/tw-success"
             . "&scope=email&state=dsdsfsfds'>Login with Twitter</a><br>";
+        echo "<a href='https://discord.com/api/oauth2/authorize?"
+            . "response_type=code"
+            . "&client_id=" . DCCLIENT_ID
+            . "&redirect_uri=http%3A%2F%2Flocalhost%3A8082%2Fdc-success"
+            . "&scope=email&state=dsdsfsfds'>Login with Discord</a>";
         break;
     case '/success':
         // GET CODE
@@ -123,6 +149,14 @@ switch ($route) {
                 "code" => $code
             ]);
         break;
+    case '/dc-success':
+        // GET CODE
+        ["code" => $code, "state" => $state] = $_GET;
+        // ECHANGE CODE => TOKEN
+        getDcUser([
+            "grant_type" => "authorization_code",
+            "code" => $code
+        ]);
     case '/error':
         ["state" => $state] = $_GET;
         echo "Auth request with state {$state} has been declined";
