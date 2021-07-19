@@ -3,6 +3,8 @@ const CLIENT_ID = "client_606c5bfe886e14.91787997";
 const CLIENT_SECRET = "2ce690b11c94aca36d9ec493d9121f9dbd5c96a5";
 const FBCLIENT_ID = "313096147158775";
 const FBCLIENT_SECRET = "c4ac86c990ffd48b3322d3734ec4ed1a";
+const TWCLIENT_ID = "ZOWVaVipWyfInp9Fkyeq6o0Bl";
+const TWCLIENT_SECRET = "rgMamIF4S0xSJ0aMzERuca0H8cS3deDOd4KWNuoNv0dWX4WluP";
 
 
 function getUser($params)
@@ -25,7 +27,7 @@ function getUser($params)
 }
 function getFbUser($params)
 {
-    $result = file_get_contents("https://graph.facebook.com/oauth/access_token?"
+    $result = file_get_contents("https://graph.facebook.com/oauth/authenticate?"
         . "redirect_uri=https://localhost/fb-success"
         . "&client_id=" . FBCLIENT_ID
         . "&client_secret=" . FBCLIENT_SECRET
@@ -43,6 +45,25 @@ function getFbUser($params)
     var_dump($user);
 }
 
+function getTwUser($params)
+{
+    $result = file_get_contents("https://api.twitter.com/oauth/authenticate?"
+        . "redirect_uri=https://localhost/tw-success"
+        . "&client_id=" . FBCLIENT_ID
+        . "&client_secret=" . FBCLIENT_SECRET
+        . "&" . http_build_query($params));
+    $token = json_decode($result, true)["access_token"];
+    // GET USER by TOKEN
+    $context = stream_context_create([
+        'http' => [
+            'method' => "GET",
+            'header' => "Authorization: Bearer " . $token
+        ]
+    ]);
+    $result = file_get_contents("https://api.twitter.com/oauth/authenticate?oauth_token=?", false, $context);
+    $user = json_decode($result, true);
+    var_dump($user);
+}
 /**
  * AUTH_CODE WORKFLOW
  *  => Get CODE
@@ -64,12 +85,17 @@ switch ($route) {
         echo "<a href='http://localhost:8081/auth?"
             . "response_type=code"
             . "&client_id=" . CLIENT_ID
-            . "&scope=basic&state=dsdsfsfds'>Login with oauth-server</a>";
+            . "&scope=basic&state=dsdsfsfds'>Login with oauth-server</a><br>";
         echo "<a href='https://facebook.com/v2.10/dialog/oauth?"
             . "response_type=code"
             . "&client_id=" . FBCLIENT_ID
             . "&redirect_uri=https://localhost/fb-success"
-            . "&scope=email&state=dsdsfsfds'>Login with facebook</a>";
+            . "&scope=email&state=dsdsfsfds'>Login with facebook</a><br>";
+        echo "<a href='https://api.twitter.com/oauth/authenticate?"
+            . "response_type=code"
+            . "&client_id=" . TWCLIENT_ID
+            . "&redirect_uri=https://localhost/tw-success"
+            . "&scope=email&state=dsdsfsfds'>Login with Twitter</a><br>";
         break;
     case '/success':
         // GET CODE
@@ -88,6 +114,14 @@ switch ($route) {
             "grant_type" => "authorization_code",
             "code" => $code
         ]);
+    case '/tw-success':
+            // GET CODE
+            ["code" => $code, "state" => $state] = $_GET;
+            // ECHANGE CODE => TOKEN
+            getTwUser([
+                "grant_type" => "authorization_code",
+                "code" => $code
+            ]);
         break;
     case '/error':
         ["state" => $state] = $_GET;
